@@ -9,7 +9,8 @@ aging_btm_next_2?ie=UTF8&reviewerType=all_reviews&pa\
 geNumber=1"
 
 def main():
-    request = requests.get(url, headers=headers)
+    session = requests.Session()
+    request = session.get(url, headers=headers)
     print(request.status_code)
 
     soup = BeautifulSoup(request.content, "html.parser")
