@@ -1,66 +1,77 @@
+import requests
 from bs4 import BeautifulSoup
 import csv
-import requests
-from random import choice
-
-url = "https://www.amazon.com/Razer-Ornata-Gaming-Keyboard-\
-Low-Profile/product-reviews/B09X6GJ691/ref=cm_cr_arp_d_p\
-aging_btm_next_2?ie=UTF8&reviewerType=all_reviews&pa\
-geNumber=1"
-
+from datetime import datetime
+import os
 def main():
-    session = requests.Session()
-    request = session.get(url, headers=headers)
-    print(request.status_code)
+    productUrl = "https://www.amazon.com/Razer-Ornata-Gaming-Keyboard-Low-Profile/dp/B09X6GJ691/ref=cm_cr_arp_d_product_top?ie=UTF8&th=1"
+    page = 1
+    print("Page: " + str(page))
+    response = requests.get(getUrl(productUrl, page), headers=headers)
+    print(response.status_code)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    reviews = soup.find_all('div', {'data-hook': 'review'})
 
-    soup = BeautifulSoup(request.content, "html.parser")
+    for review in reviews:
+        try:
+            author = review.find('span', {'class': 'a-profile-name'}).text.strip()
+        except:
+            author = None    
+        try:
+            rating = review.find('span', {'class': 'a-icon-alt'}).text.strip()
+        except:
+            rating = None    
+        try:
+            date = review.find('span', {'class': 'a-size-base'}).text.strip()
+        except:
+            date = None    
+        try:
+            text = review.find('span', {'data-hook': 'review-body'}).text.strip()
+        except:
+            text = None    
+        try:
+            verified = review.find('div', {'class': 'a-row a-spacing-mini review-data review-format-strip'}).a.text.strip()
+        except:
+            verified = None    
+        try:
+            style = review.find('div', {'class': 'a-row a-spacing-mini review-data review-format-strip'}).find("span",{"data-hook":"format-strip-linkless"}).text.strip()
+        except:
+            style = None    
+        try:
+            title = review.find('a', {'data-hook': 'review-title'}).find_all("span")[2].text.strip()
+        except:
+            title = None    
+        scrapedAt = str(datetime.now())
 
-    reviewsCount = soup.find("div", attrs={"data-hook":"cr-filter-info-review-rating-count"})
-    print(reviewsCount.text.strip().replace(",","")[0:4])
+        print(f"Author: {author}\nRating: {rating}\nDate: {date}\ntitle: {title}\nText: {text}\nVerified: {verified}\nStyle: {style}\nScrapedAt: {scrapedAt}")
+        saveToCsv(author, rating, date, text, verified, style, title, scrapedAt)
 
-    h3_tag = soup.find("h3", attrs={"data-hook": "arp-local-reviews-header"})
-    print(h3_tag.text.strip())
-    
-def staticUserAgentRotator():
-    user_agents = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.46",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_3_1) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/15.4 Safari/537.75.14",
-    "Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Mobile Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_3_1) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/15.4 Safari/537.75.14",
-    "Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Mobile Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_3_1) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/15.4 Safari/537.75.14",
-    "Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Mobile Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36",
-    ]
-    return choice(user_agents)
+    print("-"* 50)
 
 headers = {
+    'authority': 'www.amazon.com',
     'accept': 'text/html,*/*',
-    'accept-language': 'en-US,en;q=0.9,ar;q=0.8,fr;q=0.7,fr-FR;q=0.6,en-GB;q=0.5',
-    'device-memory': '4',
-    'downlink': '9.65',
-    'dpr': '1',
-    'ect': '4g',
-    'referer': url,
-    'rtt': '250',
-    'sec-ch-device-memory': '4',
-    'sec-ch-dpr': '1',
-    'sec-ch-ua': '"Microsoft Edge";v="123", "Not:A-Brand";v="8", "Chromium";v="123"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-platform': '"Windows"',
-    'sec-ch-ua-platform-version': '"10.0.0"',
-    'sec-ch-viewport-width': '1825',
-    'sec-fetch-dest': 'empty',
-    'sec-fetch-mode': 'cors',
-    'sec-fetch-site': 'same-origin',
-    'user-agent': staticUserAgentRotator(),
-    'viewport-width': '1825',
-    'x-requested-with': 'XMLHttpRequest',
-    }
+    'accept-language': 'en',
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
+    'x-requested-with': 'XMLHttpRequest'
+}
+
+def getUrl(url, pageNum):
+  review = url.replace("/dp/", "/product-reviews/") + "&pageNumber=" + str(pageNum)
+  return url
+
+def saveToCsv(author, rating, date, text, verified, style, title, scraped_at):
+  # Check if the CSV file exists
+  if not os.path.exists("reviews.csv"):
+      # If not, create and write headers
+      with open("reviews.csv", "w", newline="", encoding="utf-8") as file:
+          writer = csv.writer(file, quoting=csv.QUOTE_ALL)
+          writer.writerow(["Author", "Rating", "Date", "Text", "Verified", "Style", "Title", "ScrapedAt"])
+  # Append new data with proper quoting
+  with open("reviews.csv", "a", newline="", encoding="utf-8") as file:
+      writer = csv.writer(file, quoting=csv.QUOTE_ALL)
+      writer.writerow([author, rating, date, text, verified, style, title, scraped_at])
 
 
 if __name__ == "__main__":
-    main()
-
+  main()
